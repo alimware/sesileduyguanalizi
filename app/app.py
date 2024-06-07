@@ -104,7 +104,8 @@ class EmotionPredictorApp:
             model = joblib.load(self.model_path)
             
             # Duygu tahmini yap
-            emotion_probabilities = model.predict_proba([features])[0]
+            features = np.array(features).reshape(1, -1)  # Ensure the features are a 2D array
+            emotion_probabilities = model.predict_proba(features)[0]
             predicted_emotion = model.classes_[np.argmax(emotion_probabilities)]
             predicted_emotion_probability = np.max(emotion_probabilities)
             
