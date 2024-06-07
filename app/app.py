@@ -12,10 +12,20 @@ class EmotionPredictorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Emotion Predictor")
-        self.root.geometry("400x300")
+        self.root.geometry("400x450")
         
         self.label = tk.Label(root, text="Duygu Analizi", font=("Helvetica", 16))
-        self.label.pack(pady=20)
+        self.label.pack(pady=10)
+        
+        self.emotion_label = tk.Label(root, text="Seslendireceğiniz Duyguyu Seçin:", font=("Helvetica", 12))
+        self.emotion_label.pack(pady=5)
+        
+        self.emotions = ["angry", "happy", "sad", "calm"]
+        self.selected_emotion = tk.StringVar()
+        self.selected_emotion.set(self.emotions[0])
+        
+        self.emotion_menu = tk.OptionMenu(root, self.selected_emotion, *self.emotions)
+        self.emotion_menu.pack(pady=5)
         
         self.record_button = tk.Button(root, text="Ses Kaydı Başlat", command=self.start_recording)
         self.record_button.pack(pady=10)
@@ -29,14 +39,18 @@ class EmotionPredictorApp:
         self.result_label = tk.Label(root, text="", font=("Helvetica", 12))
         self.result_label.pack(pady=20)
         
+        self.score_label = tk.Label(root, text="Skor: 0", font=("Helvetica", 12))
+        self.score_label.pack(pady=20)
+        
         self.audio_file_path = None
-        self.model_path = "C:/Users/asus/Desktop/yapayzekaprojem/model/emotion_recognition_model.pkl"  # Model dosyasının yolunu belirtin
+        self.model_path = r"C:\Users\asus\Desktop\projem\model\emotion_recognition_model.pkl"  # Model dosyasının yolunu belirtin
         self.audio_frames = []
         self.sample_rate = 44100
         self.chunk_size = 1024
         self.audio_format = pyaudio.paInt16
         self.channels = 1
         self.audio_duration = 3
+        self.score = 0
     
     def start_recording(self):
         self.record_button.config(state=tk.DISABLED)
@@ -90,10 +104,23 @@ class EmotionPredictorApp:
             model = joblib.load(self.model_path)
             
             # Duygu tahmini yap
-            emotion_label = model.predict([features])[0]
+            emotion_probabilities = model.predict_proba([features])[0]
+            predicted_emotion = model.classes_[np.argmax(emotion_probabilities)]
+            predicted_emotion_probability = np.max(emotion_probabilities)
+            
+            # Seçilen doğru duygu
+            true_emotion = self.selected_emotion.get()
             
             # Sonucu göster
-            self.result_label.config(text=f"Analiz Sonucu: {emotion_label}")
+            self.result_label.config(text=f"Analiz Sonucu: {predicted_emotion} ({predicted_emotion_probability*100:.2f}%)")
+            
+            # Skor güncelle
+            if predicted_emotion == true_emotion:
+                score_increment = int(predicted_emotion_probability * 10)
+                self.score += score_increment
+                self.score_label.config(text=f"Skor: {self.score}")
+            else:
+                messagebox.showinfo("Sonuç", f"Tahmin yanlıştı. Doğru duygu: {true_emotion}")
         except Exception as e:
             messagebox.showerror("Hata", f"Duygu analizi sırasında bir hata oluştu: {str(e)}")
     
